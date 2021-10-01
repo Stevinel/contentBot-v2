@@ -51,7 +51,6 @@ def get_full_menu(message):
         caption="Чего желаете?",
         reply_markup=MARKUP,
     )
-    BOT.edit_message_reply_markup(message.chat.id, message.message_id)
 
 
 @logger.catch
@@ -63,7 +62,7 @@ def process_step(message):
     BOT.send_animation(
         message.chat.id,
         animation=picture["WHAT"],
-        caption="~~~Я тут не для общения\n" "Нужно выбрать действие~~~",
+        caption="~~~Я тут не для общения.\n" "Нужно выбрать действие~~~",
         reply_markup=MARKUP,
     )
 
@@ -74,44 +73,44 @@ def query_handler(call, url=None):
     от условия полученной команды"""
     picture = get_pictures()
     MARKUP = get_back_keyboard()
-
-    if not call.data:
+    try:
+        if call.data == "1":  # Продолжить
+            get_full_menu(call.message)
+        elif call.data == "2":  # Уйти
+            BOT.send_animation(call.message.chat.id, animation=picture["BYE"], reply_markup=MARKUP)
+            BOT.answer_callback_query(callback_query_id=call.id, text="~~~Пока-пока!~~~")
+        elif call.data == "3":  # Смотреть все видео
+            BOT.send_photo(
+                call.message.chat.id,
+                photo=picture["CHILL"],
+                caption="~~~Начинаем просмотр, хорошей зачилки~~~",
+            )
+            sleep(2)
+            post_videos_to_watch(call.message)
+        elif call.data == "4":  # Добавить видео
+            add_url_new_videos(call.message)
+        elif call.data == "5":  # Добавить канал
+            add_channel_url(call.message)
+        elif call.data == "6":  # Удалить канал
+            query_delete_channel(call.message)
+        elif call.data == "7":  # Показать все видео
+            show_all_videos(call.message)
+        elif call.data == "8":  # Показать все каналы
+            show_all_channels(call.message)
+        elif call.data == "9":  # Вернуться в меню
+            get_full_menu(call.message)
+        elif call.data == "10":  # Следующее видео
+            BOT.send_message(call.message.chat.id, "~~~Следующее видео~~~")
+            post_videos_to_watch(call.message)
+            BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+        elif call.data == "11":  # Отложить видео
+            deferral_video(call.message)
+            BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+        elif call.data == "12":  # Удалить видео
+            delete_video(call.message)
+            BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    except:
         process_step(call)
-    elif call.data == "1":  # Продолжить
-        get_full_menu(call.message)
-    elif call.data == "2":  # Уйти
-        BOT.send_animation(call.message.chat.id, animation=picture["BYE"], reply_markup=MARKUP)
-        BOT.answer_callback_query(callback_query_id=call.id, text="~~~Пока-пока!~~~")
-    elif call.data == "3":  # Смотреть все видео
-        BOT.send_photo(
-            call.message.chat.id,
-            photo=picture["CHILL"],
-            caption="~~~Начинаем просмотр, хорошей зачилки~~~",
-        )
-        sleep(2)
-        post_videos_to_watch(call.message)
-    elif call.data == "4":  # Добавить видео
-        add_url_new_videos(call.message)
-    elif call.data == "5":  # Добавить канал
-        add_channel_url(call.message)
-    elif call.data == "6":  # Удалить канал
-        query_delete_channel(call.message)
-    elif call.data == "7":  # Показать все видео
-        show_all_videos(call.message)
-    elif call.data == "8":  # Показать все каналы
-        show_all_channels(call.message)
-    elif call.data == "9":  # Вернуться в меню
-        get_full_menu(call.message)
-    elif call.data == "10":  # Следующее видео
-        BOT.send_message(call.message.chat.id, "~~~Следующее видео~~~")
-        post_videos_to_watch(call.message)
-        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
-    elif call.data == "11":  # Отложить видео
-        deferral_video(call.message)
-        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
-    elif call.data == "12":  # Удалить видео
-        delete_video(call.message)
-        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
 
 @logger.catch
@@ -204,7 +203,7 @@ def show_all_channels(message):
             BOT.send_message(message.chat.id, f"{name}")
         BOT.send_message(
             message.chat.id,
-            "~~Список окончен. Выберите действие:~~",
+            "~~~Список окончен. Выберите действие:~~~",
             reply_markup=MARKUP,
         )
     else:
@@ -216,6 +215,7 @@ def show_all_channels(message):
 def add_new_video(message):
     """Функция добавляет новое видео в БД"""
     picture = get_pictures()
+    MARKUP = get_actions_keyboard()
 
     if message.text.startswith("https://www.youtube.com/watch") or message.text.startswith(
         "https://youtu.be/"
@@ -237,10 +237,10 @@ def add_new_video(message):
                     url=video_url,
                     video_rating=channel_rating,
                 )
-                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~")
+                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~", reply_markup=MARKUP)
             else:
                 Video.objects.create(video_channel_name=channel_name, url=video_url)
-                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~")
+                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~", reply_markup=MARKUP)
         except:
             BOT.send_message(
                 message.chat.id,
@@ -253,7 +253,6 @@ def post_videos_to_watch(message):
     """Функция достаёт из базы все видео и выдаёт их в очереди по одному"""
     MARKUP = get_show_content_keyboard()
     all_videos = Video.objects.all().values_list("url").order_by("-video_rating")
-    
     for url in all_videos:
         BOT.send_message(message.chat.id, url)
         msg = BOT.send_message(message.chat.id, "~~~Выберите действие:~~~", reply_markup=MARKUP)
@@ -266,6 +265,94 @@ def post_videos_to_watch(message):
         BOT.register_next_step_handler(message, query_handler)
 
 
+# @logger.catch
+# def parsing_new_video_from_channel():
+#     """Функция достаёт из базы все имеющиеся каналы,
+#     проверяет есть ли на каналах новые видео"""
+#     threading.Timer(86400, parsing_new_video_from_channel).start()
+
+#     c.execute("SELECT title, url FROM channel_list WHERE url NOT NULL")
+#     (channel_name_and_url) = c.fetchall()
+
+#     for title, url in channel_name_and_url:
+#         logger.info("Bot trying to get videos")
+#         sleep(2)
+#         if len(url.split("/")):
+#             cut_link = url.split("/")[4:]
+#         eng_channel_name = cut_link[0]
+#         name_lenght = len(eng_channel_name)
+#         if name_lenght < 24:
+#             get_channel_info = requests.get(
+#                 GET_CHANNEL_BY_USERNAME
+#                 + eng_channel_name
+#                 + "&key="
+#                 + GOOGLE_API_KEY
+#             )
+#         else:
+#             get_channel_info = requests.get(
+#                 GET_CHANNEL_BY_ID + eng_channel_name + "&key=" + GOOGLE_API_KEY
+#             )
+#         if "items" not in get_channel_info:
+#             get_channel_info = requests.get(
+#                 SEARCH_BROKEN_CHANNEL
+#                 + eng_channel_name
+#                 + "&key="
+#                 + GOOGLE_API_KEY
+#             )
+#             channel_name = get_channel_info.json()["items"][0]["snippet"][
+#                 "channelTitle"
+#             ]
+#             channel_id = get_channel_info.json()["items"][0]["snippet"][
+#                 "channelId"
+#             ]
+#         else:
+#             channel_name = get_channel_info.json()["items"][0]["snippet"][
+#                 "title"
+#             ]
+#             channel_id = get_channel_info.json()["items"][0]["id"]
+#         search_new_video = requests.get(
+#             SEARCH_VIDEO_BY_CHANNEL_ID
+#             + channel_id
+#             + "&maxResults=30&key="
+#             + GOOGLE_API_KEY
+#         )
+#         date_of_publication = search_new_video.json()["items"][0]["snippet"][
+#             "publishedAt"
+#         ][:10]
+#         video_id = search_new_video.json()["items"][0]["id"]
+#         video_id_in_broken_channels = search_new_video.json()["items"][1]["id"]
+#         if "videoId" in video_id:
+#             new_video = YOUTUBE_URL + video_id["videoId"]
+#         else:
+#             new_video = YOUTUBE_URL + video_id_in_broken_channels["videoId"]
+#         date_today = str(dt.date.today())
+#         if date_of_publication == date_today:
+#             c.execute(
+#                 "CREATE TABLE query_channel AS SELECT title, rating\
+#                 FROM channel_list\
+#                 GROUP BY title\
+#                 HAVING rating NOT NULL"
+#             )
+#             c.execute(
+#                 "INSERT INTO channel_list (video_url, title)\
+#                 VALUES (?, ?);",
+#                 (new_video, channel_name),
+#             )
+#             c.execute(
+#                 "UPDATE channel_list\
+#                 SET rating =\
+#                 (SELECT rating FROM query_channel\
+#                 WHERE channel_list.title = query_channel.title)"
+#             )
+#             c.execute("DROP TABLE query_channel")
+#             sleep(1)
+#             logger.info("Bot added video")
+#             conn.commit()
+#         else:
+#             logger.info("No new videos were found")
+#     logger.info("Parsing done")
+
+
 class Command(BaseCommand):
     help = "Телеграм-бот"
 
@@ -275,9 +362,12 @@ class Command(BaseCommand):
         print(BOT.get_me())
         while True:
             try:
+                # thread2 = threading.Thread(target=parsing_new_video_from_channel())
+                # thread2.start()
+                # sleep(20)
                 thread1 = threading.Thread(target=BOT.polling(none_stop=True))
                 thread1.start()
             except Exception as error:
                 logger.error(error)
                 BOT.send_message(TELEGRAM_CHAT_ID, f"Error at startup {error}")
-                sleep(10)
+                sleep(5)

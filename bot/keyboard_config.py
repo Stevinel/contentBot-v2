@@ -31,7 +31,6 @@ def get_actions_keyboard():
     MARKUP.add(types.InlineKeyboardButton(text="🍻 Смотреть контент", callback_data=3))
     MARKUP.add(types.InlineKeyboardButton(text="📀 Добавить видео", callback_data=4))
     MARKUP.add(types.InlineKeyboardButton(text="📹 Добавить канал", callback_data=5))
-    MARKUP.add(types.InlineKeyboardButton(text="❌ Удалить канал", callback_data=6))
     MARKUP.add(types.InlineKeyboardButton(text="👀 Показать все видео", callback_data=7))
     MARKUP.add(types.InlineKeyboardButton(text="👀 Показать все каналы", callback_data=8))
     MARKUP.add(types.InlineKeyboardButton(text="🖕 Уйти", callback_data=2))
@@ -49,6 +48,7 @@ def get_show_channels_keyboard():
     """Клавиатура меню при показе всех каналов"""
     MARKUP = types.InlineKeyboardMarkup()
     MARKUP.add(types.InlineKeyboardButton(text="📹 Добавить канал", callback_data=5))
+    MARKUP.add(types.InlineKeyboardButton(text="👀 Показать все каналы", callback_data=8))
     MARKUP.add(types.InlineKeyboardButton(text="❌ Удалить канал", callback_data=6))
     MARKUP.add(types.InlineKeyboardButton(text="👈 Вернуться в меню", callback_data=9))
     return MARKUP
