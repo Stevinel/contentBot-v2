@@ -28,6 +28,7 @@ def start_message(message):
     """
     MARKUP = get_hello_keyboard()
     picture = get_pictures()
+
     BOT.send_photo(
         message.chat.id,
         photo=picture["HELLO_PHOTO"],
@@ -43,6 +44,7 @@ def get_full_menu(message):
     """Функция отображает все кнопки меню"""
     MARKUP = get_actions_keyboard()
     picture = get_pictures()
+
     BOT.send_photo(
         message.chat.id,
         photo=picture["SHREK_THINKING"],
@@ -57,6 +59,7 @@ def get_full_menu(message):
 def process_step(message):
     picture = get_pictures()
     MARKUP = get_back_keyboard()
+
     BOT.send_animation(
         message.chat.id,
         animation=picture["WHAT"],
@@ -71,8 +74,7 @@ def query_handler(call, url=None):
     от условия полученной команды"""
     picture = get_pictures()
     MARKUP = get_back_keyboard()
-    print(call, "tam")
-    print(call.data, "tyt")
+
     if not call.data:
         process_step(call)
     elif call.data == "1":  # Продолжить
@@ -139,7 +141,8 @@ def show_all_videos(message):
 def add_channel(message, channel_url):
     """Функция Добавляет новый канала в БД"""
     picture = get_pictures()
-    MARKUP = get_back_keyboard()
+    MARKUP = get_show_channels_keyboard()
+
     try:
         if (
             channel_url.startswith("https://www.youtube.com/")
@@ -192,8 +195,9 @@ def delete_channel(message):
 @logger.catch
 def show_all_channels(message):
     """Функция показывает все имеющиеся каналы в БД"""
-    channels = Channel.objects.all().order_by("-rating")
     MARKUP = get_show_channels_keyboard()
+    channels = Channel.objects.all().order_by("-rating")
+
     if channels.exists():
         BOT.send_message(message.chat.id, "~~~Список всех каналов:~~~\n")
         for name in channels:
@@ -212,6 +216,7 @@ def show_all_channels(message):
 def add_new_video(message):
     """Функция добавляет новое видео в БД"""
     picture = get_pictures()
+
     if message.text.startswith("https://www.youtube.com/watch") or message.text.startswith(
         "https://youtu.be/"
     ):
@@ -248,6 +253,7 @@ def post_videos_to_watch(message):
     """Функция достаёт из базы все видео и выдаёт их в очереди по одному"""
     MARKUP = get_show_content_keyboard()
     all_videos = Video.objects.all().values_list("url").order_by("-video_rating")
+    
     for url in all_videos:
         BOT.send_message(message.chat.id, url)
         msg = BOT.send_message(message.chat.id, "~~~Выберите действие:~~~", reply_markup=MARKUP)

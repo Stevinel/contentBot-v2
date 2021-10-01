@@ -17,7 +17,7 @@ from contentbot.settings import BOT
 def add_channel_url(message):
     """Функция ожидает ссылку на канал и переходит к функции
     ввода рейтинга для канала"""
-    msg = BOT.send_message(message.chat.id, "Введите ссылку на канал.")
+    msg = BOT.send_message(message.chat.id, "~~~Введите ссылку на канал~~~")
     BOT.register_next_step_handler(msg, add_channel_raiting)
 
 
