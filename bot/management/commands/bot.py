@@ -56,6 +56,7 @@ def get_full_menu(message):
 @logger.catch
 @BOT.message_handler(content_types=["text"])
 def process_step(message):
+    """Функция отслеживает сообщения от пользователя"""
     picture = get_pictures()
     MARKUP = get_back_keyboard()
 

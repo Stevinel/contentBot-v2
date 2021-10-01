@@ -47,6 +47,7 @@ def add_channel_raiting(message):
 
 @logger.catch
 def check_channel_data(message, channel_url):
+    """Функция достаёт данные из ссылки, для добавления нового канала"""
     channel_rating = message.text
     if len(channel_url.split("/")):
         cut_link = channel_url.split("/")[4:]
@@ -81,6 +82,7 @@ def add_url_new_videos(message):
 
 @logger.catch
 def check_video_data(message):
+    """Функция достаёт данные из ссылки, для добавления нового видео"""
     video_url = message.text
 
     if len(message.text.split("/")):
