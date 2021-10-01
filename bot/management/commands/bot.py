@@ -1,19 +1,20 @@
-import os
-import telebot
 import datetime as dt
+from time import sleep
+
 from django.core.management.base import BaseCommand
-from bot.models import Channel, Video 
+from dotenv import load_dotenv
 
 from bot.keyboard_config import *
-from time import sleep
 from bot.loguru_config import logger
-from dotenv import load_dotenv
+from bot.models import Channel, Video
+
 load_dotenv()
 import threading
-from bot.utils import check_channel_data, add_channel_url, query_delete_channel, check_video_data, add_url_new_videos
 
+from bot.utils import (add_channel_url, add_url_new_videos, check_channel_data,
+                       check_video_data, deferral_video, delete_video,
+                       query_delete_channel)
 from contentbot.settings import BOT, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
-
 
 DATE_FORMAT = "%d.%m.%Y"
 
@@ -33,7 +34,7 @@ def start_message(message):
         caption=f"Привет, калтэнтеры!\n"
         f"Сегодня {dt.date.today().strftime(DATE_FORMAT)}\n"
         "Cмотрите описание бота и используйте команды.\n",
-        reply_markup=MARKUP
+        reply_markup=MARKUP,
     )
 
 
@@ -43,38 +44,72 @@ def get_full_menu(message):
     MARKUP = get_actions_keyboard()
     picture = get_pictures()
     BOT.send_photo(
-    message.chat.id,
-    photo=picture["SHREK_THINKING"],
-    caption="Чего желаете?",
-    reply_markup=MARKUP,
+        message.chat.id,
+        photo=picture["SHREK_THINKING"],
+        caption="Чего желаете?",
+        reply_markup=MARKUP,
+    )
+    BOT.edit_message_reply_markup(message.chat.id, message.message_id)
+
+
+@logger.catch
+@BOT.message_handler(content_types=["text"])
+def process_step(message):
+    picture = get_pictures()
+    MARKUP = get_back_keyboard()
+    BOT.send_animation(
+        message.chat.id,
+        animation=picture["WHAT"],
+        caption="~~~Я тут не для общения\n" "Нужно выбрать действие~~~",
+        reply_markup=MARKUP,
     )
 
 
-@BOT.callback_query_handler(func=lambda call:True)
-def query_handler(call):
+@BOT.callback_query_handler(func=lambda call: True)
+def query_handler(call, url=None):
     """Функция распределяет дальнейшие действия в зависимости
     от условия полученной команды"""
-    MARKUP = get_back_keyboard()
     picture = get_pictures()
-
-    if call.data == '1': # Продолжить
+    MARKUP = get_back_keyboard()
+    print(call, "tam")
+    print(call.data, "tyt")
+    if not call.data:
+        process_step(call)
+    elif call.data == "1":  # Продолжить
         get_full_menu(call.message)
-    elif call.data == '2': # Уйти
+    elif call.data == "2":  # Уйти
         BOT.send_animation(call.message.chat.id, animation=picture["BYE"], reply_markup=MARKUP)
-        BOT.answer_callback_query(callback_query_id=call.id, text='~~Пока-пока!~~')
-        # BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
-    elif call.data == '4': # Добавить видео
+        BOT.answer_callback_query(callback_query_id=call.id, text="~~~Пока-пока!~~~")
+    elif call.data == "3":  # Смотреть все видео
+        BOT.send_photo(
+            call.message.chat.id,
+            photo=picture["CHILL"],
+            caption="~~~Начинаем просмотр, хорошей зачилки~~~",
+        )
+        sleep(2)
+        post_videos_to_watch(call.message)
+    elif call.data == "4":  # Добавить видео
         add_url_new_videos(call.message)
-    elif call.data == '5': # Добавить канал
+    elif call.data == "5":  # Добавить канал
         add_channel_url(call.message)
-    elif call.data == "6": # Удалить канал
+    elif call.data == "6":  # Удалить канал
         query_delete_channel(call.message)
-    elif call.data == '7': # Показать все видео
+    elif call.data == "7":  # Показать все видео
         show_all_videos(call.message)
-    elif call.data == '8': # Показать все каналы
+    elif call.data == "8":  # Показать все каналы
         show_all_channels(call.message)
-    elif call.data == "9": # Вернуться в меню
+    elif call.data == "9":  # Вернуться в меню
         get_full_menu(call.message)
+    elif call.data == "10":  # Следующее видео
+        BOT.send_message(call.message.chat.id, "~~~Следующее видео~~~")
+        post_videos_to_watch(call.message)
+        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    elif call.data == "11":  # Отложить видео
+        deferral_video(call.message)
+        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    elif call.data == "12":  # Удалить видео
+        delete_video(call.message)
+        BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
 
 @logger.catch
@@ -87,13 +122,17 @@ def show_all_videos(message):
         for url in urls:
             BOT.send_message(message.chat.id, url.url)
         BOT.send_message(
-                message.chat.id,
-                "~~Список окончен, можете вернуться назад.~~",
-                reply_markup=MARKUP
+            message.chat.id,
+            "~~~Список окончен, можете вернуться назад~~~",
+            reply_markup=MARKUP,
         )
         BOT.edit_message_reply_markup(message.chat.id, message.message_id)
     else:
-        BOT.send_message(message.chat.id, "В базе данных нет видео.", reply_markup=MARKUP)
+        BOT.send_message(
+            message.chat.id,
+            "~~~В базе данных нет видео~~~",
+            reply_markup=MARKUP,
+        )
 
 
 @logger.catch
@@ -109,105 +148,122 @@ def add_channel(message, channel_url):
         ):
             BOT.send_photo(
                 message.chat.id,
-                photo=picture['ERIC_THINKING'],
+                photo=picture["ERIC_THINKING"],
                 caption="Я думаю...",
             )
             channel_name, channel_rating = check_channel_data(message, channel_url)
             channel = Channel.objects.all().filter(title=channel_name)
 
             if not channel.exists():
-                Channel.objects.create(
-                    title=channel_name,
-                    url=channel_url,
-                    rating=channel_rating
-                )
-                
+                Channel.objects.create(title=channel_name, url=channel_url, rating=channel_rating)
+
                 BOT.send_message(
                     message.chat.id,
-                    f"~~Канал '{channel_name}' добавлен в базу.~~",
+                    f"~~~Канал '{channel_name}' добавлен в базу~~~",
                     reply_markup=MARKUP,
                 )
             else:
-                BOT.send_message(message.chat.id, "~~Канал уже есть в базе.~~", reply_markup=MARKUP)
+                BOT.send_message(
+                    message.chat.id,
+                    "~~~Канал уже есть в базе~~~",
+                    reply_markup=MARKUP,
+                )
     except:
-        BOT.send_message(message.chat.id, "~~Вы ввели неправильные данные.~~")
-        
+        BOT.send_message(message.chat.id, "~~~Вы ввели неправильные данные~~~")
+
 
 @logger.catch
 def delete_channel(message):
     """Функция удаляет канал из базы данных"""
     channel_name = message.text
     channel = Channel.objects.all().filter(title=channel_name)
-    
+
     if channel.exists():
         channel.delete()
-        BOT.send_message(message.chat.id, f"~~Канал '{channel_name}' удалён.~~")
+        BOT.send_message(message.chat.id, f"~~~Канал '{channel_name}' удалён~~~")
     else:
         BOT.send_message
-        (message.chat.id, "~~В вашей базе нет такого канала, начните заново.~~")
+        (
+            message.chat.id,
+            "~~~В вашей базе нет такого канала, начните заново~~~",
+        )
 
 
 @logger.catch
 def show_all_channels(message):
     """Функция показывает все имеющиеся каналы в БД"""
-    channels = Channel.objects.all().order_by('-rating')
+    channels = Channel.objects.all().order_by("-rating")
     MARKUP = get_show_channels_keyboard()
     if channels.exists():
-        BOT.send_message(message.chat.id, "~~Список всех каналов:~~\n")
+        BOT.send_message(message.chat.id, "~~~Список всех каналов:~~~\n")
         for name in channels:
-            BOT.send_message(message.chat.id, f"{name}" )
+            BOT.send_message(message.chat.id, f"{name}")
         BOT.send_message(
             message.chat.id,
             "~~Список окончен. Выберите действие:~~",
             reply_markup=MARKUP,
         )
     else:
-        BOT.send_message(message.chat.id, "~~У вас не добавлены каналы.~~")
+        BOT.send_message(message.chat.id, "~~~У вас не добавлены каналы~~~")
         BOT.register_next_step_handler(message, MARKUP)
-
 
 
 @logger.catch
 def add_new_video(message):
     """Функция добавляет новое видео в БД"""
     picture = get_pictures()
-    if message.text.startswith(
-        "https://www.youtube.com/watch"
-    ) or message.text.startswith("https://youtu.be/"):
+    if message.text.startswith("https://www.youtube.com/watch") or message.text.startswith(
+        "https://youtu.be/"
+    ):
         BOT.send_photo(
-            message.chat.id, photo=picture['ERIC_THINKING'], caption="Я думаю..."
+            message.chat.id,
+            photo=picture["ERIC_THINKING"],
+            caption="Я думаю...",
         )
         sleep(1.5)
         channel_name, video_url = check_video_data(message)
-        channel_rating = Channel.objects.all().filter(title=channel_name).values_list('rating')
+        channel_rating = Channel.objects.all().filter(title=channel_name).values_list("rating")
         try:
             if Video.objects.filter(url=video_url).exists():
-                BOT.send_message(
-                message.chat.id, "~~Это видео уже есть в базе~~"
-            )
+                BOT.send_message(message.chat.id, "~~~Это видео уже есть в базе~~~")
             elif channel_rating.exists():
                 Video.objects.create(
                     video_channel_name=channel_name,
                     url=video_url,
-                    video_rating=channel_rating
+                    video_rating=channel_rating,
                 )
-                BOT.send_message(message.chat.id, "~~Видео добавлено.~~")
+                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~")
             else:
-                Video.objects.create(
-                    video_channel_name=channel_name,
-                    url=video_url
-                )
-                BOT.send_message(message.chat.id, "~~Видео добавлено.~~")
+                Video.objects.create(video_channel_name=channel_name, url=video_url)
+                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~")
         except:
             BOT.send_message(
-                message.chat.id, "~~Вы отправили неверную ссылку, начните сначала.~~"
+                message.chat.id,
+                "~~~Вы отправили неверную ссылку, начните сначала~~~",
             )
+
+
+@logger.catch
+def post_videos_to_watch(message):
+    """Функция достаёт из базы все видео и выдаёт их в очереди по одному"""
+    MARKUP = get_show_content_keyboard()
+    all_videos = Video.objects.all().values_list("url").order_by("-video_rating")
+    for url in all_videos:
+        BOT.send_message(message.chat.id, url)
+        msg = BOT.send_message(message.chat.id, "~~~Выберите действие:~~~", reply_markup=MARKUP)
+        BOT.register_next_step_handler(msg, query_handler, url)
+        break
+    else:
+        BOT.send_message(message.chat.id, "~~~В базе не осталось видео для просмотра~~~")
+
+        BOT.send_message(message.chat.id, "~~~Конец~~~", reply_markup=MARKUP)
+        BOT.register_next_step_handler(message, query_handler)
 
 
 class Command(BaseCommand):
     help = "Телеграм-бот"
 
-    @BOT.message_handler(func=lambda message: True, content_types=['text'])
+    @BOT.message_handler(func=lambda message: True, content_types=["text"])
     def handle(self, *args, **options):
         sleep(3)
         print(BOT.get_me())

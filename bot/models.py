@@ -17,7 +17,7 @@ class Channel(models.Model):
 class Video(models.Model):
     video_channel_name = models.CharField("Название канала(из видео)", max_length=100)
     url = models.CharField("Ссылка видео", max_length=150)
-    video_rating = models.PositiveBigIntegerField("Рейтинг видео", default=0)
+    video_rating = models.IntegerField("Рейтинг видео", default=0)
 
     class Meta:
         verbose_name = "Видео"
