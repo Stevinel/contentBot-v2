@@ -12,11 +12,16 @@ load_dotenv()
 import threading
 
 from bot.utils import (add_channel_url, add_url_new_videos, check_channel_data,
-                       check_video_data, deferral_video, delete_video,
-                       query_delete_channel)
-from contentbot.settings import BOT, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
+                       check_new_video, check_video_data, deferral_video,
+                       delete_video, query_delete_channel)
+from contentbot.settings import BOT, TELEGRAM_CHAT_ID
 
 DATE_FORMAT = "%d.%m.%Y"
+MARKDOWN = """
+    *bold text*
+    _italic text_
+    [text](URL)
+    """
 
 
 @logger.catch
@@ -32,10 +37,11 @@ def start_message(message):
     BOT.send_photo(
         message.chat.id,
         photo=picture["HELLO_PHOTO"],
-        caption=f"Привет, калтэнтеры!\n"
-        f"Сегодня {dt.date.today().strftime(DATE_FORMAT)}\n"
-        "Cмотрите описание бота и используйте команды.\n",
+        caption=f"*Привет, калтэнтеры!*\n"
+        f"*Сегодня {dt.date.today().strftime(DATE_FORMAT)}*\n"
+        "*Cмотрите описание бота и используйте команды*\n",
         reply_markup=MARKUP,
+        parse_mode="MARKDOWN",
     )
 
 
@@ -48,8 +54,9 @@ def get_full_menu(message):
     BOT.send_photo(
         message.chat.id,
         photo=picture["SHREK_THINKING"],
-        caption="Чего желаете?",
+        caption="*Чего желаете?*",
         reply_markup=MARKUP,
+        parse_mode="MARKDOWN",
     )
 
 
@@ -63,8 +70,9 @@ def process_step(message):
     BOT.send_animation(
         message.chat.id,
         animation=picture["WHAT"],
-        caption="~~~Я тут не для общения.\n" "Нужно выбрать действие~~~",
+        caption="*Я тут не для общения.*\n" "*Нужно выбрать действие*",
         reply_markup=MARKUP,
+        parse_mode="MARKDOWN",
     )
 
 
@@ -79,12 +87,13 @@ def query_handler(call, url=None):
             get_full_menu(call.message)
         elif call.data == "2":  # Уйти
             BOT.send_animation(call.message.chat.id, animation=picture["BYE"], reply_markup=MARKUP)
-            BOT.answer_callback_query(callback_query_id=call.id, text="~~~Пока-пока!~~~")
+            BOT.answer_callback_query(callback_query_id=call.id, text="~~~*Пока-пока!*~~~")
         elif call.data == "3":  # Смотреть все видео
             BOT.send_photo(
                 call.message.chat.id,
                 photo=picture["CHILL"],
-                caption="~~~Начинаем просмотр, хорошей зачилки~~~",
+                caption="*Начинаем просмотр, хорошей зачилки*",
+                parse_mode="MARKDOWN",
             )
             sleep(2)
             post_videos_to_watch(call.message)
@@ -101,7 +110,7 @@ def query_handler(call, url=None):
         elif call.data == "9":  # Вернуться в меню
             get_full_menu(call.message)
         elif call.data == "10":  # Следующее видео
-            BOT.send_message(call.message.chat.id, "~~~Следующее видео~~~")
+            BOT.send_message(call.message.chat.id, "*~~~Следующее видео~~~*", parse_mode="MARKDOWN")
             post_videos_to_watch(call.message)
             BOT.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
         elif call.data == "11":  # Отложить видео
@@ -125,15 +134,17 @@ def show_all_videos(message):
             BOT.send_message(message.chat.id, url.url)
         BOT.send_message(
             message.chat.id,
-            "~~~Список окончен, можете вернуться назад~~~",
+            "*Список окончен, можете вернуться назад*",
             reply_markup=MARKUP,
+            parse_mode="MARKDOWN"
         )
         BOT.edit_message_reply_markup(message.chat.id, message.message_id)
     else:
         BOT.send_message(
             message.chat.id,
-            "~~~В базе данных нет видео~~~",
+            "*~~~В базе данных нет видео~~~*",
             reply_markup=MARKUP,
+            parse_mode="MARKDOWN"
         )
 
 
@@ -152,7 +163,8 @@ def add_channel(message, channel_url):
             BOT.send_photo(
                 message.chat.id,
                 photo=picture["ERIC_THINKING"],
-                caption="Я думаю...",
+                caption="*Я думаю...*",
+                parse_mode="MARKDOWN",
             )
             channel_name, channel_rating = check_channel_data(message, channel_url)
             channel = Channel.objects.all().filter(title=channel_name)
@@ -162,17 +174,23 @@ def add_channel(message, channel_url):
 
                 BOT.send_message(
                     message.chat.id,
-                    f"~~~Канал '{channel_name}' добавлен в базу~~~",
+                    f"*~~~Канал '{channel_name}' добавлен в базу~~~*",
                     reply_markup=MARKUP,
+                    parse_mode="MARKDOWN",
                 )
             else:
                 BOT.send_message(
                     message.chat.id,
-                    "~~~Канал уже есть в базе~~~",
+                    "*~~~Канал уже есть в базе~~~*",
                     reply_markup=MARKUP,
+                    parse_mode="MARKDOWN",
                 )
     except:
-        BOT.send_message(message.chat.id, "~~~Вы ввели неправильные данные~~~")
+        BOT.send_message(
+            message.chat.id,
+            "*~~~Вы ввели неправильные данные~~~*",
+            parse_mode="MARKDOWN",
+        )
 
 
 @logger.catch
@@ -183,12 +201,16 @@ def delete_channel(message):
 
     if channel.exists():
         channel.delete()
-        BOT.send_message(message.chat.id, f"~~~Канал '{channel_name}' удалён~~~")
-    else:
-        BOT.send_message
-        (
+        BOT.send_message(
             message.chat.id,
-            "~~~В вашей базе нет такого канала, начните заново~~~",
+            f"*~~~Канал '{channel_name}' удалён~~~*",
+            parse_mode="MARKDOWN",
+        )
+    else:
+        BOT.send_message(
+            message.chat.id,
+            "*В вашей базе нет такого канала, начните заново*",
+            parse_mode="MARKDOWN",
         )
 
 
@@ -199,16 +221,19 @@ def show_all_channels(message):
     channels = Channel.objects.all().order_by("-rating")
 
     if channels.exists():
-        BOT.send_message(message.chat.id, "~~~Список всех каналов:~~~\n")
+        BOT.send_message(message.chat.id, "*~~~Список всех каналов:~~~*\n", parse_mode="MARKDOWN")
         for name in channels:
             BOT.send_message(message.chat.id, f"{name}")
         BOT.send_message(
             message.chat.id,
-            "~~~Список окончен. Выберите действие:~~~",
+            "*Список окончен. Выберите действие:*",
             reply_markup=MARKUP,
+            parse_mode="MARKDOWN",
         )
     else:
-        BOT.send_message(message.chat.id, "~~~У вас не добавлены каналы~~~")
+        BOT.send_message(
+            message.chat.id, "*~~~У вас не добавлены каналы~~~*", parse_mode="MARKDOWN"
+        )
         BOT.register_next_step_handler(message, MARKUP)
 
 
@@ -224,28 +249,44 @@ def add_new_video(message):
         BOT.send_photo(
             message.chat.id,
             photo=picture["ERIC_THINKING"],
-            caption="Я думаю...",
+            caption="*Я думаю...*",
+            parse_mode="MARKDOWN",
         )
         sleep(1.5)
         channel_name, video_url = check_video_data(message)
         channel_rating = Channel.objects.all().filter(title=channel_name).values_list("rating")
         try:
             if Video.objects.filter(url=video_url).exists():
-                BOT.send_message(message.chat.id, "~~~Это видео уже есть в базе~~~")
+                BOT.send_message(
+                    message.chat.id,
+                    "*~~~Это видео уже есть в базе~~~*",
+                    parse_mode="MARKDOWN",
+                )
             elif channel_rating.exists():
                 Video.objects.create(
                     video_channel_name=channel_name,
                     url=video_url,
                     video_rating=channel_rating,
                 )
-                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~", reply_markup=MARKUP)
+                BOT.send_message(
+                    message.chat.id,
+                    "*~~~Видео добавлено~~~*",
+                    reply_markup=MARKUP,
+                    parse_mode="MARKDOWN",
+                )
             else:
                 Video.objects.create(video_channel_name=channel_name, url=video_url)
-                BOT.send_message(message.chat.id, "~~~Видео добавлено~~~", reply_markup=MARKUP)
+                BOT.send_message(
+                    message.chat.id,
+                    "*~~~Видео добавлено~~~*",
+                    reply_markup=MARKUP,
+                    parse_mode="MARKDOWN",
+                )
         except:
             BOT.send_message(
                 message.chat.id,
-                "~~~Вы отправили неверную ссылку, начните сначала~~~",
+                "*Вы отправили неверную ссылку, начните сначала*",
+                parse_mode="MARKDOWN",
             )
 
 
@@ -256,102 +297,38 @@ def post_videos_to_watch(message):
     all_videos = Video.objects.all().values_list("url").order_by("-video_rating")
     for url in all_videos:
         BOT.send_message(message.chat.id, url)
-        msg = BOT.send_message(message.chat.id, "~~~Выберите действие:~~~", reply_markup=MARKUP)
+        msg = BOT.send_message(
+            message.chat.id,
+            "*~~~Выберите действие:~~~*",
+            reply_markup=MARKUP,
+            parse_mode="MARKDOWN",
+        )
         BOT.register_next_step_handler(msg, query_handler, url)
         break
     else:
-        BOT.send_message(message.chat.id, "~~~В базе не осталось видео для просмотра~~~")
+        BOT.send_message(
+            message.chat.id,
+            "*В базе не осталось видео для просмотра*",
+            parse_mode="MARKDOWN",
+        )
 
-        BOT.send_message(message.chat.id, "~~~Конец~~~", reply_markup=MARKUP)
+        BOT.send_message(
+            message.chat.id, "*~~~Конец~~~*", reply_markup=MARKUP, parse_mode="MARKDOWN"
+        )
         BOT.register_next_step_handler(message, query_handler)
 
 
-# @logger.catch
-# def parsing_new_video_from_channel():
-#     """Функция достаёт из базы все имеющиеся каналы,
-#     проверяет есть ли на каналах новые видео"""
-#     threading.Timer(86400, parsing_new_video_from_channel).start()
-
-#     c.execute("SELECT title, url FROM channel_list WHERE url NOT NULL")
-#     (channel_name_and_url) = c.fetchall()
-
-#     for title, url in channel_name_and_url:
-#         logger.info("Bot trying to get videos")
-#         sleep(2)
-#         if len(url.split("/")):
-#             cut_link = url.split("/")[4:]
-#         eng_channel_name = cut_link[0]
-#         name_lenght = len(eng_channel_name)
-#         if name_lenght < 24:
-#             get_channel_info = requests.get(
-#                 GET_CHANNEL_BY_USERNAME
-#                 + eng_channel_name
-#                 + "&key="
-#                 + GOOGLE_API_KEY
-#             )
-#         else:
-#             get_channel_info = requests.get(
-#                 GET_CHANNEL_BY_ID + eng_channel_name + "&key=" + GOOGLE_API_KEY
-#             )
-#         if "items" not in get_channel_info:
-#             get_channel_info = requests.get(
-#                 SEARCH_BROKEN_CHANNEL
-#                 + eng_channel_name
-#                 + "&key="
-#                 + GOOGLE_API_KEY
-#             )
-#             channel_name = get_channel_info.json()["items"][0]["snippet"][
-#                 "channelTitle"
-#             ]
-#             channel_id = get_channel_info.json()["items"][0]["snippet"][
-#                 "channelId"
-#             ]
-#         else:
-#             channel_name = get_channel_info.json()["items"][0]["snippet"][
-#                 "title"
-#             ]
-#             channel_id = get_channel_info.json()["items"][0]["id"]
-#         search_new_video = requests.get(
-#             SEARCH_VIDEO_BY_CHANNEL_ID
-#             + channel_id
-#             + "&maxResults=30&key="
-#             + GOOGLE_API_KEY
-#         )
-#         date_of_publication = search_new_video.json()["items"][0]["snippet"][
-#             "publishedAt"
-#         ][:10]
-#         video_id = search_new_video.json()["items"][0]["id"]
-#         video_id_in_broken_channels = search_new_video.json()["items"][1]["id"]
-#         if "videoId" in video_id:
-#             new_video = YOUTUBE_URL + video_id["videoId"]
-#         else:
-#             new_video = YOUTUBE_URL + video_id_in_broken_channels["videoId"]
-#         date_today = str(dt.date.today())
-#         if date_of_publication == date_today:
-#             c.execute(
-#                 "CREATE TABLE query_channel AS SELECT title, rating\
-#                 FROM channel_list\
-#                 GROUP BY title\
-#                 HAVING rating NOT NULL"
-#             )
-#             c.execute(
-#                 "INSERT INTO channel_list (video_url, title)\
-#                 VALUES (?, ?);",
-#                 (new_video, channel_name),
-#             )
-#             c.execute(
-#                 "UPDATE channel_list\
-#                 SET rating =\
-#                 (SELECT rating FROM query_channel\
-#                 WHERE channel_list.title = query_channel.title)"
-#             )
-#             c.execute("DROP TABLE query_channel")
-#             sleep(1)
-#             logger.info("Bot added video")
-#             conn.commit()
-#         else:
-#             logger.info("No new videos were found")
-#     logger.info("Parsing done")
+@logger.catch
+def parsing_new_video_from_channel():
+    """Функция достаёт из базы все имеющиеся каналы,
+    проверяет есть ли на каналах новые видео"""
+    threading.Timer(86400, parsing_new_video_from_channel).start()
+    channel_urls = Channel.objects.all().values_list("url")
+    for url in channel_urls:
+        logger.info("Bot trying to get videos")
+        url = "".join(url)
+        check_new_video(url)
+        sleep(1.5)
 
 
 class Command(BaseCommand):
