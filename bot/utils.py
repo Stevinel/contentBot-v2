@@ -163,12 +163,8 @@ def check_new_video(url):
             new_video = YOUTUBE_URL + video_id_in_broken_channels["videoId"]
         date_today = str(dt.date.today())
         if date_of_publication == date_today:
-            sleep(1)
-            print(channel_name, "cn")
-            print(url, "url")
             channels_rating = Channel.objects.filter(title=channel_name).values_list("rating")[0]
             channel_rating = "".join(str(x) for x in channels_rating)
-            print(channel_rating, "rating")
             new_video = Video.objects.create(
                 video_channel_name=channel_name,
                 url=new_video,
