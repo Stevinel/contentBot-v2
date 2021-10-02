@@ -87,7 +87,7 @@ def query_handler(call, url=None):
             get_full_menu(call.message)
         elif call.data == "2":  # Уйти
             BOT.send_animation(call.message.chat.id, animation=picture["BYE"], reply_markup=MARKUP)
-            BOT.answer_callback_query(callback_query_id=call.id, text="~~~*Пока-пока!*~~~")
+            BOT.answer_callback_query(callback_query_id=call.id, text="~~~Пока-пока!~~~")
         elif call.data == "3":  # Смотреть все видео
             BOT.send_photo(
                 call.message.chat.id,
