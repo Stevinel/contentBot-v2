@@ -315,10 +315,7 @@ def post_videos_to_watch(message):
             message.chat.id,
             "*В базе не осталось видео для просмотра*",
             parse_mode="MARKDOWN",
-        )
-
-        BOT.send_message(
-            message.chat.id, "*~~~Конец~~~*", reply_markup=MARKUP, parse_mode="MARKDOWN"
+            reply_markup=MARKUP
         )
         BOT.register_next_step_handler(message, query_handler)
 
