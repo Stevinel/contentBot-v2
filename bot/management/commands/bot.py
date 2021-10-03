@@ -70,7 +70,7 @@ def process_step(message):
     BOT.send_animation(
         message.chat.id,
         animation=picture["WHAT"],
-        caption="*Я тут не для общения.*\n" "*Нужно выбрать действие*",
+        caption="*Я тут не для общения.*\n" "*Нужно выбрать действие.*",
         reply_markup=MARKUP,
         parse_mode="MARKDOWN",
     )
