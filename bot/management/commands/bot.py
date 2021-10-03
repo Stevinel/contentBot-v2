@@ -1,6 +1,6 @@
 import datetime as dt
 from time import sleep
-
+import schedule
 from django.core.management.base import BaseCommand
 from dotenv import load_dotenv
 
@@ -281,14 +281,19 @@ def add_new_video(message):
                     "*~~~Видео добавлено~~~*",
                     reply_markup=MARKUP,
                     parse_mode="MARKDOWN",
-                )
+                )   
         except:
             BOT.send_message(
                 message.chat.id,
-                "*Вы отправили неверную ссылку, начните сначала*",
+                "*~~~Произошла ошибка~~~*",
                 parse_mode="MARKDOWN",
             )
-
+    else:
+        BOT.send_message(
+                message.chat.id,
+                "*~~~Вы ввели неправильную ссылку~~~*",
+                parse_mode="MARKDOWN",
+            )
 
 @logger.catch
 def post_videos_to_watch(message):
@@ -322,13 +327,18 @@ def post_videos_to_watch(message):
 def parsing_new_video_from_channel():
     """Функция достаёт из базы все имеющиеся каналы,
     проверяет есть ли на каналах новые видео"""
-    threading.Timer(86400, parsing_new_video_from_channel).start()
     channel_urls = Channel.objects.all().values_list("url")
     for url in channel_urls:
         logger.info("Bot trying to get videos")
         url = "".join(url)
         check_new_video(url)
         sleep(1.5)
+
+
+schedule.every(1).day.at("21:30").do(parsing_new_video_from_channel)
+def call_parsing():
+    threading.Timer(20, call_parsing).start()
+    schedule.run_pending()
 
 
 class Command(BaseCommand):
@@ -340,12 +350,12 @@ class Command(BaseCommand):
         print(BOT.get_me())
         while True:
             try:
-                # thread2 = threading.Thread(target=parsing_new_video_from_channel())
-                # thread2.start()
-                # sleep(20)
-                thread1 = threading.Thread(target=BOT.polling(none_stop=True))
-                thread1.start()
+                parsing = threading.Thread(target=call_parsing())
+                parsing.start()
+                bot = threading.Thread(target=BOT.polling(none_stop=True))
+                bot.start()
             except Exception as error:
                 logger.error(error)
                 BOT.send_message(TELEGRAM_CHAT_ID, f"Error at startup {error}")
                 sleep(5)
+    
