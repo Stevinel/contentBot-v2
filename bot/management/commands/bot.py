@@ -334,6 +334,7 @@ def parsing_new_video_from_channel():
 
 schedule.every(1).day.at("21:30").do(parsing_new_video_from_channel)
 def call_parsing():
+    """Вызывает парсер новых видео в 21:30 по МСК"""
     threading.Timer(20, call_parsing).start()
     schedule.run_pending()
 
