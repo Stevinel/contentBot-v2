@@ -11,7 +11,7 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 import bot.keyboard_config as keyb
 import bot.management.commands.bot as bot
 from bot.loguru_config import logger
-from contentbot.settings import BOT, TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID_2
+from contentbot.settings import BOT, TELEGRAM_CHAT_ID
 
 
 @logger.catch
@@ -171,9 +171,6 @@ def check_new_video(url):
                 video_rating=channel_rating,
             )
             BOT.send_message(TELEGRAM_CHAT_ID, f"Добавлено новое видео c канала '{channel_name}'")
-            BOT.send_message(TELEGRAM_CHAT_ID_2, f"Добавлено новое видео c канала '{channel_name}'")
-
             logger.info("Bot added video")
         else:
             logger.info("No new videos were found")
-    logger.info("Parsing done")

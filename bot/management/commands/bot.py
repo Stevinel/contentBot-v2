@@ -267,11 +267,10 @@ def parsing_new_video_from_channel():
         url = "".join(url)
         check_new_video(url)
         sleep(1.5)
+    logger.info("Parsing done")
 
 
 schedule.every(1).day.at("21:30").do(parsing_new_video_from_channel)
-
-
 def call_parsing():
     """Вызывает парсер новых видео в 21:30 по МСК"""
     threading.Timer(20, call_parsing).start()
