@@ -262,18 +262,20 @@ def parsing_new_video_from_channel():
     """Функция достаёт из базы все имеющиеся каналы,
     проверяет есть ли на каналах новые видео"""
     channel_urls = Channel.objects.all().values_list("url")
+    BOT.send_message(TELEGRAM_CHAT_ID, "Приступаю к парсингу")
     for url in channel_urls:
         logger.info("Bot trying to get videos")
         url = "".join(url)
         check_new_video(url)
-        sleep(1.5)
+        sleep(5)
+    BOT.send_message(TELEGRAM_CHAT_ID, "Пасринг окончен")
     logger.info("Parsing done")
 
 
 schedule.every(1).day.at("21:30").do(parsing_new_video_from_channel)
 def call_parsing():
     """Вызывает парсер новых видео в 21:30 по МСК"""
-    threading.Timer(20, call_parsing).start()
+    threading.Timer(59, call_parsing).start()
     schedule.run_pending()
 
 
