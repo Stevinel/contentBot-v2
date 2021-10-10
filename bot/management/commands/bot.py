@@ -268,7 +268,7 @@ def parsing_new_video_from_channel():
         url = "".join(url)
         check_new_video(url)
         sleep(5)
-    BOT.send_message(TELEGRAM_CHAT_ID, "Пасринг окончен")
+    BOT.send_message(TELEGRAM_CHAT_ID, "Парсинг окончен")
     logger.info("Parsing done")
 
 
